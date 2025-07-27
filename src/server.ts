@@ -1,4 +1,4 @@
-// src/server.ts - Using Objects Instead of Maps
+
 import express from 'express';
 import cors from 'cors';
 
@@ -12,10 +12,9 @@ interface Robot {
 
 interface Mission {
   id: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   assignedRobotId: string | null;
   createdAt: Date;
-  currentStage: 'preparation' | 'travel' | 'delivery' | 'completed';
+  currentStage: 'preparation' | 'travel' | 'delivery' | 'completed' | 'cancelled';
   stageStartTime: Date;
 }
 
@@ -28,7 +27,7 @@ const missionStages = {
   preparation: { duration: 30, robotStatus: 'assigned' as const },
   travel: { duration: 150, robotStatus: 'en_route' as const },
   delivery: { duration: 60, robotStatus: 'delivering' as const },
-  completed: { duration: 0, robotStatus: 'idle' as const }
+  completed: { duration: 5, robotStatus: 'completed' as const }
 };
 
 // Initialize robots
@@ -74,7 +73,6 @@ const createNewMissions = (): void => {
     
     const mission: Mission = {
       id: missionId,
-      status: 'in_progress',
       assignedRobotId: robot.id,
       createdAt: new Date(),
       currentStage: 'preparation',
@@ -92,24 +90,25 @@ const updateRobotStates = (): void => {
     if (!robot.currentMissionId) return;
     
     const mission = missions[robot.currentMissionId];
-    if (!mission || mission.currentStage === 'completed') return;
+    if (!mission || mission.currentStage === 'cancelled') return;
     
     const timeInStage = (Date.now() - mission.stageStartTime.getTime()) / 1000;
     const currentStageInfo = missionStages[mission.currentStage];
     
     if (timeInStage >= currentStageInfo.duration) {
       const stages = ['preparation', 'travel', 'delivery', 'completed'];
-      const nextStage = stages[stages.indexOf(mission.currentStage) + 1] || 'completed';
+      const currentIndex = stages.indexOf(mission.currentStage);
+      const nextStage = stages[currentIndex + 1];
       
-      mission.currentStage = nextStage as any;
-      mission.stageStartTime = new Date();
-      
-      if (nextStage === 'completed') {
-        mission.status = 'completed';
-        updateRobot(robot.id, { status: 'idle', currentMissionId: null });
-      } else {
+      if (nextStage) {
+        // Move to next stage
+        mission.currentStage = nextStage as any;
+        mission.stageStartTime = new Date();
         const newRobotStatus = missionStages[nextStage as keyof typeof missionStages].robotStatus;
         updateRobot(robot.id, { status: newRobotStatus });
+      } else if (mission.currentStage === 'completed') {
+        // After completed stage, robot goes idle and mission ends
+        updateRobot(robot.id, { status: 'idle', currentMissionId: null });
       }
     }
   });
@@ -121,7 +120,7 @@ const cancelRobotMission = (robotId: string): boolean => {
   if (!robot || !robot.currentMissionId) return false;
   
   const mission = missions[robot.currentMissionId];
-  if (mission) mission.status = 'cancelled';
+  if (mission) mission.currentStage = 'cancelled';
   
   updateRobot(robotId, { status: 'idle', currentMissionId: null });
   return true;
@@ -143,16 +142,16 @@ app.post('/api/robots/:id/cancel', (req, res) => {
   res.json({ success });
 });
 
-// Stats for dashboard cards
+// Stats to display on the dashboard
 app.get('/api/stats', (req, res) => {
   const missionArray = Object.values(missions);
   res.json({
     totalRobots: Object.keys(robots).length,
     idleRobots: getIdleRobots().length,
     totalMissions: Object.keys(missions).length,
-    activeMissions: missionArray.filter(m => m.status === 'in_progress').length,
-    completedMissions: missionArray.filter(m => m.status === 'completed').length,
-    cancelledMissions: missionArray.filter(m => m.status === 'cancelled').length
+    activeMissions: missionArray.filter(m => m.currentStage !== 'completed' && m.currentStage !== 'cancelled').length,
+    completedMissions: missionArray.filter(m => m.currentStage === 'completed').length,
+    cancelledMissions: missionArray.filter(m => m.currentStage === 'cancelled').length
   });
 });
 
@@ -162,10 +161,11 @@ app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   
   initializeRobots();
+  createNewMissions();
   
   // Start timers
-  setInterval(createNewMissions, 60000);  // Every minute
-  setInterval(updateRobotStates, 10000);  // Every 10 seconds
+  setInterval(createNewMissions, 60000);
+  setInterval(updateRobotStates, 10000);
   
   console.log('Simulation started');
 });

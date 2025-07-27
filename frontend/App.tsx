@@ -17,7 +17,6 @@ interface Stats {
 }
 
 const FleetDashboard: React.FC = () => {
-  // State to store robots data
   const [robots, setRobots] = useState<Robot[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,13 +34,15 @@ const FleetDashboard: React.FC = () => {
       setRobots(robotsData);
       setLastUpdate(new Date());
       setError(null);
+      return true; // Success
     } catch (err) {
       console.error('Failed to fetch robots:', err);
       setError('Failed to fetch robot data');
+      return false; // Failed
     }
   };
 
-  // Function to fetch statistics (optional)
+  // Function to fetch statistics
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/stats');
@@ -51,8 +52,7 @@ const FleetDashboard: React.FC = () => {
       const statsData = await response.json();
       setStats(statsData);
     } catch (err) {
-      console.error('Failed to fetch stats:', err);
-      // Don't show error for stats - it's optional
+      console.warn('Stats temporarily unavailable:', err);
     }
   };
 
@@ -73,9 +73,9 @@ const FleetDashboard: React.FC = () => {
       const result = await response.json();
       console.log('Cancel result:', result);
       
-      // Immediately fetch fresh data
+      // Immediately fetch fresh data after cancellation
       await fetchRobots();
-      if (stats) await fetchStats(); // Only fetch stats if we have them
+      await fetchStats();
     } catch (err) {
       console.error('Failed to cancel mission:', err);
       setError(`Failed to cancel mission for ${robotId}`);
@@ -84,21 +84,32 @@ const FleetDashboard: React.FC = () => {
 
   // Set up polling to fetch data every 3 seconds
   useEffect(() => {
-    // Initial load
+    // Initial load - keep trying until we get robot data
     const loadInitialData = async () => {
       setLoading(true);
-      await fetchRobots();
-      await fetchStats(); // Try to get stats, but don't fail if unavailable
+      
+      // Keep trying until we successfully fetch robots
+      let success = false;
+      while (!success) {
+        success = await fetchRobots();
+        if (!success) {
+          console.log('Retrying robot fetch in 2 seconds...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+      
+      // Try to get stats
+      await fetchStats();
       setLoading(false);
     };
     
     loadInitialData();
     
-    // Set up polling interval
+    // Set up polling interval - 10 seconds
     const interval = setInterval(async () => {
       await fetchRobots();
       await fetchStats();
-    }, 3000); // Poll every 3 seconds
+    }, 10000);
     
     // Cleanup interval on component unmount
     return () => clearInterval(interval);
@@ -172,7 +183,7 @@ const FleetDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Robots Table - This is the main requirement */}
+        {/* Robots Table */}
         <div className="table-container">
           <div className="table-header">
             <h2 className="table-title">Robot Fleet Status ({robots.length} robots)</h2>
@@ -223,7 +234,7 @@ const FleetDashboard: React.FC = () => {
 
         {/* Footer info */}
         <div className="footer">
-          Dashboard updates every 3 seconds • New missions created every minute
+          Dashboard updates every 10 seconds • New missions created every minute
         </div>
       </div>
     </div>

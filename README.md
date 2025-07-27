@@ -1,19 +1,23 @@
 # FleetOps Dashboard
 
-A real-time robot fleet monitoring dashboard built with TypeScript, React, and Node.js. This project simulates autonomous delivery robots in a hospital environment with live status tracking and mission management capabilities.
-
+A real-time robot fleet monitoring dashboard built with TypeScript, React, and Node.js. This project simulates autonomous delivery robots in a hospital environment with live status tracking.
 
 ## Installation & Setup
 
 ### Prerequisites
-- **Node.js** 16.0 or higher
-- **npm** 7.0 or higher  
+- **Node.js** (tested with 22.17.0)
+- **npm** (tested with 10.9.2)  
 
 ### Local Development Setup
 
 1. **Clone the repository**
    ```bash
+    # HTTPS
    git clone https://github.com/YOUR_USERNAME/fleetops-dashboard.git
+   
+   # OR SSH
+   git clone git@github.com:YOUR_USERNAME/fleetops-dashboard.git
+   
    cd fleetops-dashboard
    ```
 
@@ -54,13 +58,13 @@ idle → assigned → en_route → delivering → completed → idle
 
 *After completion stage finishes, robot automatically returns to `idle` status and becomes available for new missions.*
 
-**Total Minimal Mission Duration**: 235 seconds
+**Total Minimal Mission Duration**: 245 seconds
 
 ### Timing Rationale
 - **Preparation (30s)**: Based on assumed robot boot-up and route planning time
 - **Travel (150s)**: Assumes 200m average hospital distance at 0.8m/s plus elevator waits
 - **Delivery (60s)**: Accounts for authentication, handoff, and confirmation logging
-- **Completed (5s)**: Enough time to see the indication  
+- **Completed (5s)**: Enough time to see the indication
 
 ### Cancel Robot Mission
 
@@ -77,6 +81,11 @@ idle → assigned → en_route → delivering → completed → idle
 
 ## Development Notes
 
+ ### System Timing
+- **Backend robot state updates**: Every 10 seconds
+- **Frontend polling**: Every 10 seconds (in production I would use shorter intervals in order to account for actions by multiple users that need to be immediately reflected)
+- **Mission creation**: Every 60 seconds (plus 2 missions immediately at startup)
+
 ### Assumptions Made
 - **Robot capabilities are similar**: All robots have identical speed and functionality
 - **Simplified assignment logic**: First-available robot receives next mission (FIFO)
@@ -87,7 +96,7 @@ idle → assigned → en_route → delivering → completed → idle
 - **Development speed vs. production features**: In-memory storage over using Redis or persistent database for faster development and to follow the instructions
 - **Simple assignment vs. optimization**: FIFO robot assignment
 - **Fixed timing vs. realistic variability**: Consistent mission durations for demo predictability
-- **Polling-based updates vs. time precision**: 10-second state checks for predictable simulation behavior, meaning actual times per stage may be longer (each stage lasts for its defined duration, plus up to 10 seconds until the next poll)
+- **Predictable intervals vs. exact timing**: 10-second backend polling simplifies simulation logic but stages may last longer than defined (for example: preparation could be 30-40 seconds depending on timing)
 
 ## AWS Deployment Architecture
 
@@ -102,8 +111,8 @@ idle → assigned → en_route → delivering → completed → idle
 #### Backend Infrastructure  
 - **Amazon VPC** with two **Availability Zones** for higher availability
 - **Application Load Balancer**: Traffic distribution across multiple instances
-- **Target Groups**: Define health check endpoints (/api/stats) and routing rules for the ALB to determine which instances are healthy and can receive traffic
-- **Auto Scaling Groups**: Automatically scale EC2 instances (2 and more) based on CPU/memory metrics and automatically register/deregister instances with the Target Groups
+- **Target Group**: Define health check endpoints (/api/stats) and routing rules for the ALB to determine which instances are healthy and can receive traffic
+- **Auto Scaling Group**: Automatically scale EC2 instances (2 and more) based on CPU/memory metrics and automatically register/deregister instances with the Target Groups
 - One **Public Subnet** and one **Private Subnet** in each AZ
 - One **EC2** instance in each Public Subnet to serve as a Bastion Host
 - **Private EC2 instances**: ASG manages dockerized Node.js application instances in private subnets
@@ -113,31 +122,17 @@ idle → assigned → en_route → delivering → completed → idle
 - **Amazon ECR**: Docker image repository for storing and versioning the Node.js application images
 
 #### Data Layer
-- **Amazon ElastiCache Redis**: Fast shared state management across instances
-- **Amazon RDS PostgreSQL**: Persistent storage for mission history and analytics
-- **IAM Roles** for EC2 instances to be able to access RDS and ElastiCache.
-- The Node.js application communicates with Redis and Postgress using 
-
-### Data Architecture Strategy
-
-#### ElastiCache (Fast Operations)
-- Real-time robot status updates
-- Active mission state management
-- Fast lookups for dashboard queries
-- Shared state across multiple backend instances
-
-#### RDS PostgreSQL (Persistent Records)
-- Mission history and audit trails
-- Robot performance analytics
-- Configuration and settings
-- Business intelligence and reporting
+- **Amazon ElastiCache Redis**: Fast shared state management across instances (current robot states, active mission data)
+- **Amazon RDS PostgreSQL**: Persistent storage for mission history and analytics (full mission records saved upon completion, cancelled missions, hourly statistics)
+- **IAM Roles** for EC2 instances to be able to access RDS and ElastiCache securely
+- The Node.js application communicates with Redis and PostgreSQL using dedicated client libraries (such as`ioredis` for Redis, `pg` for PostgreSQL)
 
 ## Testing Strategy
 
 ### Manual Testing Checklist
 - [ ] Dashboard loads and displays 100 robots in idle state
-- [ ] Missions are created every 60 seconds (2 per cycle)
+- [ ] Missions are created immediately at startup (2 missions) and every 60 seconds thereafter (2 per cycle)
 - [ ] Robot status progresses through all stages correctly
 - [ ] Cancel button immediately idles robots
 - [ ] Statistics update in real-time
-- [ ] Frontend polls backend every 3 seconds
+- [ ] Frontend polls backend every 10 seconds (verify in Network tab - should see API calls with 10-second intervals)

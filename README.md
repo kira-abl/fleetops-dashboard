@@ -13,10 +13,10 @@ A real-time robot fleet monitoring dashboard built with TypeScript, React, and N
 1. **Clone the repository**
    ```bash
     # HTTPS
-   git clone https://github.com/YOUR_USERNAME/fleetops-dashboard.git
+   git clone https://github.com/kira-abl/fleetops-dashboard.git
    
    # OR SSH
-   git clone git@github.com:YOUR_USERNAME/fleetops-dashboard.git
+   git clone git@github.com:kira-abl/fleetops-dashboard.git
    
    cd fleetops-dashboard
    ```
@@ -83,7 +83,7 @@ idle → assigned → en_route → delivering → completed → idle
 
  ### System Timing
 - **Backend robot state updates**: Every 10 seconds
-- **Frontend polling**: Every 10 seconds (in production I would use shorter intervals in order to account for actions by multiple users that need to be immediately reflected)
+- **Frontend polling**: Every 10 seconds (in production I would consider using shorter intervals in order to account for actions by multiple users that need to be immediately reflected)
 - **Mission creation**: Every 60 seconds (plus 2 missions immediately at startup)
 
 ### Assumptions Made

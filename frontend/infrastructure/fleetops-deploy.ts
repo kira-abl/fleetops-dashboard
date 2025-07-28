@@ -32,7 +32,7 @@ function createFleetOpsInfrastructure(app: App) {
     defaultTargetGroups: [targetGroup],
   });
 
-  // Basic security group for application
+  // Basic security group for application (access through ALB or Bastion)
   const appSG = new ec2.SecurityGroup(stack, 'AppSG', {
     vpc: vpc,
     description: 'Allow traffic to Node.js application',

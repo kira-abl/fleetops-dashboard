@@ -112,7 +112,7 @@ idle → assigned → en_route → delivering → completed → idle
 - **Amazon VPC** with two **Availability Zones** for higher availability
 - **Application Load Balancer**: Traffic distribution across multiple instances
 - **Target Group**: Define health check endpoints (/api/stats) and routing rules for the ALB to determine which instances are healthy and can receive traffic
-- **Auto Scaling Group**: Automatically scale EC2 instances (2 and more) based on CPU/memory metrics and automatically register/deregister instances with the Target Groups
+- **Auto Scaling Group**: Automatically scale EC2 instances (2 and more) based on CPU/memory metrics and automatically register/deregister instances with the Target Group
 - One **Public Subnet** and one **Private Subnet** in each AZ
 - One **EC2** instance in each Public Subnet to serve as a Bastion Host
 - **Private EC2 instances**: ASG manages dockerized Node.js application instances in private subnets
@@ -125,7 +125,13 @@ idle → assigned → en_route → delivering → completed → idle
 - **Amazon ElastiCache Redis**: Fast shared state management across instances (current robot states, active mission data)
 - **Amazon RDS PostgreSQL**: Persistent storage for mission history and analytics (full mission records saved upon completion, cancelled missions, hourly statistics)
 - **IAM Roles** for EC2 instances to be able to access RDS and ElastiCache securely
-- The Node.js application communicates with Redis and PostgreSQL using dedicated client libraries (such as`ioredis` for Redis, `pg` for PostgreSQL)
+- The Node.js application communicates with Redis and PostgreSQL using dedicated client libraries (such as `ioredis` for Redis, `pg` for PostgreSQL)
+whyc would i ujse space before the backtick?
+
+### Infrastructure-as-Code Sample
+Basic CDK example available in `infrastructure/fleetops-deploy.ts` showing core AWS networking and load balancing setup.
+
+**Note:** This is a simplified example showing fundamental CDK concepts. A production deployment would include EC2 instances, Auto Scaling Groups, bastion hosts, and database components as outlined in the full architecture.
 
 ## Testing Strategy
 

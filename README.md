@@ -62,7 +62,7 @@ idle → assigned → en_route → delivering → completed → idle
 
 ### Timing Rationale
 - **Preparation (30s)**: Based on assumed robot boot-up and route planning time
-- **Travel (150s)**: Estimated navigation time through hospital corridors, including elevator waits and obstacle avoidance
+- **Travel (150s)**: Assumes 120m average distance at 0.8 m/s
 - **Delivery (60s)**: Accounts for authentication, handoff, and confirmation logging
 - **Completed (5s)**: Enough time to see the indication
 

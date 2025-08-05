@@ -118,7 +118,7 @@ idle → assigned → en_route → delivering → completed → idle
 - **Private EC2 instances**: ASG manages dockerized Node.js application instances in private subnets
 - The ALB routes traffic to healthy instances in the Target Groups via **Routing Tables**
 - Developers can SSH into the private EC2 instances via the Bastion Hosts
-- **Security Groups**: Network-level firewall rules
+- **Security Groups**: Instance-level firewall rules
 - **Amazon ECR**: Docker image repository for storing and versioning the Node.js application images
 
 #### Data Layer
@@ -126,7 +126,6 @@ idle → assigned → en_route → delivering → completed → idle
 - **Amazon RDS PostgreSQL**: Persistent storage for mission history and analytics (full mission records saved upon completion, cancelled missions, hourly statistics)
 - **IAM Roles** for EC2 instances to be able to access RDS and ElastiCache securely
 - The Node.js application communicates with Redis and PostgreSQL using dedicated client libraries (such as `ioredis` for Redis, `pg` for PostgreSQL)
-whyc would i ujse space before the backtick?
 
 ### Infrastructure-as-Code Sample
 Basic CDK example available in `infrastructure/fleetops-deploy.ts` showing core AWS networking and load balancing setup.

@@ -89,7 +89,7 @@ idle → assigned → en_route → delivering → completed → idle
 ### Assumptions Made
 - **Robot capabilities are similar**: All robots have identical speed and functionality
 - **Simplified assignment logic**: First-available robot receives next mission (FIFO)
-- **Hospital environment**: 200m delivery distances with elevator access
+- **Hospital environment**: 120m delivery distances
 - **Mission complexity**: All deliveries have similar time requirements
 
 ### Tradeoffs
